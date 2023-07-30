@@ -163,10 +163,13 @@ fun careful_player (card_list, goal) =
 	    case (card_list, cards_held, current_score) of
 		(_, _, 0) => []
 	      | ([], _, _) => []
-	      | (c::cs, _, _) => if ( sum_cards(cards_held + 10 < goal)) then Draw::helper(cs, c::cards_held, score(c::cards_held)) else []
-	      | (c::cs, d::ds, _) => if ( sum_cards(c::cards_held) > goal) then (Discard d)::helper(card_list, ds, score(ds, goal))
-				     else
- 			 
+	      | (c::cs, d::ds, _) => let val new_score = score(c::ds, goal)
+				     in
+					 if new_score = 0
+					 then (Discard d)::Draw::helper(cs, ds, 0)
+					 else []
+				     end
+	      | (c::cs, _, _) => if ( sum_cards(cards_held) + 10 < goal ) then Draw::helper(cs, c::cards_held, score(c::cards_held, goal)) else []
     in
 	helper(card_list, [], 0)
     end
