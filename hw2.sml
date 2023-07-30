@@ -40,13 +40,12 @@ fun get_substitutions2 (substitutions : string list list, s : string) =
     end
 
 fun similar_names (substitutions : string list list, {first=f, middle=m, last=l}) =
-    let val nicknames = get_substitutions2(substitutions, f)
-	fun helper (nicknames, new_full_names) =
+    let fun helper (nicknames, new_full_names) =
 	    case nicknames of
 		[] => {first=f, middle=m, last=l}::new_full_names
 	      | x::xs => helper(xs, {first=x, middle=m, last=l}::new_full_names)
     in
-	helper(nicknames, [])
+	helper(get_substitutions2(substitutions, f), [])
     end
 
 (* you may assume that Num is always used with values 2, 3, ..., 10
@@ -102,6 +101,7 @@ fun sum_cards cs =
 	helper(cs, 0)
     end
 	
+(* Here I am using local variables for readability *)	
 fun score (cards_held, goal) =
     let val sum = sum_cards(cards_held)
 	val is_same_color = all_same_color(cards_held)
@@ -117,15 +117,14 @@ fun officiate (card_list, moves, goal) =
 	      | ( (Discard card)::ms, _) => let val new_cards_held = remove_card(cards_held, card, IllegalMove)
 					    in helper(card_list, new_cards_held, ms, score(new_cards_held, goal)) end
 	      | ( (Draw)::ms, [] ) => current_score
-	      | ( (Draw)::ms, c::cs) => let val new_sum = sum_cards(c::cards_held)
-					in if new_sum >= goal
-					   then score(c::cards_held, goal)
-					   else helper(cs, c::cards_held, ms, score(c::cards_held, goal))
-					end
+	      | ( (Draw)::ms, c::cs) => if sum_cards(c::cards_held) >= goal
+					then score(c::cards_held, goal)
+					else helper(cs, c::cards_held, ms, score(c::cards_held, goal))
     in
-	helper(card_list, [], moves, 0)
+	helper(card_list, [], moves, score([], goal))
     end
 
+(* In order to accomodate the two possible Ace values, I take the sum of the cards currently held as an argument. Also using local var's for readability*)
 fun score_challenge (cards_held, sum_cards, goal) =
     let val is_same_color = all_same_color(cards_held)
 	val prelim_score = if sum_cards > goal then 3*(sum_cards - goal) else goal-sum_cards
@@ -138,24 +137,22 @@ fun officiate_challenge (card_list, moves, goal) =
 	    case ( moves, card_list ) of
 		( [],_ ) => current_score
 	      | ( (Discard (suit, rank))::ms, _) => let val new_cards_held = remove_card(cards_held, (suit, rank), IllegalMove)
-							val is_ace = rank = Ace
 						    in
-							if is_ace
+							if rank = Ace
 							then helper(card_list, new_cards_held, ms, score_challenge(new_cards_held, sum_cards(cards_held) - 1, goal))
 							else helper(card_list, new_cards_held, ms, score(new_cards_held, goal))
 						    end
 	      | ( (Draw)::ms, [] ) => current_score
-	      | ( (Draw)::ms, (suit, rank)::cs) => let val is_ace = rank = Ace
-						       val new_sum = if is_ace then sum_cards(cards_held) + 1 else sum_cards(cards_held) + card_value((suit, rank))
+	      | ( (Draw)::ms, (suit, rank)::cs) => let val new_sum = if rank = Ace then sum_cards(cards_held) + 1 else sum_cards(cards_held) + card_value((suit, rank))
 						   in
-						       if is_ace andalso new_sum + 10 < goal
+						       if rank = Ace andalso new_sum + 10 < goal
 						       then helper (cs, (suit, rank)::cards_held, ms, score_challenge((suit, rank)::cards_held, new_sum+10, goal))
 						       else if new_sum < goal
 						       then helper(cs, (suit, rank)::cards_held, ms, score_challenge((suit, rank)::cards_held, new_sum, goal))
 						       else score_challenge((suit, rank)::cards_held, new_sum, goal)
 						   end
     in
-	helper(card_list, [], moves, 0)
+	helper(card_list, [], moves, score_challenge([], 0, goal))
     end
 
 fun careful_player (card_list, goal) =
@@ -163,13 +160,12 @@ fun careful_player (card_list, goal) =
 	    case (card_list, cards_held, current_score) of
 		(_, _, 0) => []
 	      | ([], _, _) => []
-	      | (c::cs, d::ds, _) => let val new_score = score(c::ds, goal)
-				     in
-					 if new_score = 0
-					 then (Discard d)::Draw::helper(cs, ds, 0)
-					 else []
-				     end
-	      | (c::cs, _, _) => if ( sum_cards(cards_held) + 10 < goal ) then Draw::helper(cs, c::cards_held, score(c::cards_held, goal)) else []
+	      | (c::cs, d::ds, _) => if score(c::ds, goal) = 0
+				     then (Discard d)::Draw::helper(cs, ds, 0)
+				     else if ( sum_cards(cards_held) + 10 < goal )
+				     then Draw::helper(cs, c::cards_held, score(c::cards_held, goal))
+				     else []
+	      | (c::cs, [], _) => Draw::helper(cs, c::cards_held, score(c::cards_held, goal))
     in
-	helper(card_list, [], 0)
+	helper(card_list, [], score([], goal))
     end

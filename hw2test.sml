@@ -39,3 +39,11 @@ val test13 = ((officiate([(Clubs,Jack),(Spades,Num(8))],
                          42);
                false) 
               handle IllegalMove => true)
+
+val card_list = [
+  (Clubs, Num 7), (Hearts, King), (Diamonds, Num 3),
+  (Spades, Num 9), (Hearts, Ace), (Clubs, Num 2),
+  (Diamonds, Num 5), (Spades, Queen), (Clubs, Num 2),
+  (Hearts, Ace)
+]
+val careful_move_list = careful_player(card_list, 31)
