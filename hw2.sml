@@ -124,7 +124,7 @@ fun officiate (card_list, moves, goal) =
 	helper(card_list, [], moves, score([], goal))
     end
 
-(* In order to accomodate the two possible Ace values, I take the sum of the cards currently held as an argument. Also using local var's for readability*)
+(* In order to accomodate the two possible Ace values, I take the sum of the cards currently held as an argument. Also using local variables for readability*)
 fun score_challenge (cards_held, sum_cards, goal) =
     let val is_same_color = all_same_color(cards_held)
 	val prelim_score = if sum_cards > goal then 3*(sum_cards - goal) else goal-sum_cards
